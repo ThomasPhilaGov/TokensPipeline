@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Guide: Design Tokens → CSS → Storybook Automation</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --warning: #f39c12;
+            --light: #f8f9fa;
+            --dark: #1a1a1a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+            color: var(--dark);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary);
+            margin-top: 2rem;
+        }
+
+        .step {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            tab-size: 2;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+        }
+
+        .file-structure {
+            background: var(--light);
+            padding: 1rem;
+            border-left: 4px solid var(--warning);
+            margin: 1rem 0;
+        }
+
+        .warning {
+            background: #fff3cd;
+            padding: 1rem;
+            border-left: 4px solid #ffc107;
+            margin: 1.5rem 0;
+        }
+
+        .code-label {
+            display: block;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <h1>Complete Automation Workflow: Design Tokens → CSS → Storybook</h1>
+
+    <!-- Full Process Overview -->
+    <div class="step">
+        <h2>Table of Contents</h2>
+        <ol>
+            <li>GitHub Repository Setup</li>
+            <li>Style Dictionary Configuration</li>
+            <li>GitHub Action Workflow</li>
+            <li>Storybook Integration</li>
+            <li>Deployment Strategies</li>
+            <li>Full Code Examples</li>
+        </ol>
+    </div>
+
+    <!-- Part 1: Repository Setup -->
+    <div class="step">
+        <h2>1. GitHub Repository Setup</h2>
+        
+        <h3>Create Repository</h3>
+        <pre><code>git clone https://github.com/your-username/design-tokens-workflow.git
+cd design-tokens-workflow</code></pre>
+
+        <h3>Add tokens.json</h3>
+        <span class="code-label">tokens.json</span>
+        <pre><code class="json">{
+  "color": {
+    "primary": { "value": "#ff0000" },
+    "secondary": { "value": "#00ff00" },
+    "background": { "value": "#ffffff" }
+  },
+  "spacing": {
+    "small": { "value": "8px" },
+    "medium": { "value": "16px" }
+  }
+}</code></pre>
+    </div>
+
+    <!-- Part 2: Style Dictionary Config -->
+    <div class="step">
+        <h2>2. Style Dictionary Configuration</h2>
+        
+        <span class="code-label">config.json</span>
+        <pre><code class="json">{
+  "source": ["tokens.json"],
+  "platforms": {
+    "css": {
+      "transformGroup": "css",
+      "buildPath": "build/",
+      "files": [{
+        "destination": "variables.css",
+        "format": "css/variables"
+      }]
+    },
+    "storybook": {
+      "transformGroup": "js",
+      "buildPath": "storybook/",
+      "files": [{
+        "destination": "designTokens.js",
+        "format": "javascript/es6"
+      }]
+    }
+  }
+}</code></pre>
+    </div>
+
+    <!-- Part 3: GitHub Action Workflow -->
+    <div class="step">
+        <h2>3. GitHub Action Automation</h2>
+        
+        <span class="code-label">.github/workflows/build.yml</span>
+        <pre><code class="yaml">name: Design Token Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths: ['tokens.json', 'config.json']
+
+jobs:
+  build-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install style-dictionary
+
+      - name: Generate assets
+        run: npx style-dictionary build
+
+      - name: Commit generated files
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add build/
+          git commit -m "Auto-generate design token outputs" || echo "No changes to commit"
+          git push</code></pre>
+
+        <div class="warning">
+            <strong>Note:</strong> The conditional <code>|| echo</code> prevents workflow failures when there are no changes.
+        </div>
+    </div>
+
+    <!-- Part 4: Storybook Integration -->
+    <div class="step">
+        <h2>4. Storybook Implementation</h2>
+        
+        <h3>Storybook Configuration</h3>
+        <span class="code-label">.storybook/preview.js</span>
+        <pre><code class="javascript">import '../build/variables.css';
+import '../storybook/designTokens.js';
+
+export const parameters = {
+  actions: { argTypesRegex: "^on[A-Z].*" },
+  controls: {
+    expanded: true,
+    matchers: {
+      color: /(background|color)$/i,
+      date: /Date$/,
+    },
+  },
+};</code></pre>
+
+        <h3>Component Usage Example</h3>
+        <span class="code-label">src/components/Button.stories.js</span>
+        <pre><code class="javascript">export const PrimaryButton = () => `
+  &lt;button style="
+    background: var(--color-primary);
+    padding: var(--spacing-medium);
+    color: white;
+  "&gt;
+    Click Me
+  &lt;/button&gt;
+`;</code></pre>
+    </div>
+
+    <!-- Part 5: Deployment -->
+    <div class="step">
+        <h2>5. Deployment Strategies</h2>
+        
+        <h3>GitHub Pages Deployment</h3>
+        <pre><code class="yaml"># Add to GitHub Action
+- name: Deploy Storybook
+  uses: peaceiris/actions-gh-pages@v3
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    publish_dir: ./storybook-static</code></pre>
+
+        <h3>Netlify Setup</h3>
+        <pre><code class="bash"># netlify.toml
+[build]
+  command = "npm run build-storybook"
+  publish = "storybook-static"</code></pre>
+    </div>
+
+    <!-- Part 6: Full File Structure -->
+    <div class="step" role="region" aria-labelledby="project-structure-heading">
+        <h2 id="project-structure-heading">6. Complete Project Structure</h2>
+        <div class="file-structure">
+            <pre aria-label="Project file structure"><code>project-root/
+├── .github/
+│   └── workflows/
+│       └── build.yml
+├── .storybook/
+│   └── preview.js
+├── build/
+│   └── variables.css
+├── storybook/
+│   └── designTokens.js
+├── tokens.json
+├── config.json
+└── package.json</code></pre>
+        </div>
+    </div>
+
+    <!-- Hosting Instructions -->
+    <div class="warning" role="region" aria-labelledby="hosting-instructions-heading">
+        <h3 id="hosting-instructions-heading">Hosting This Guide</h3>
+        <p>1. Save as <code>index.html</code><br>
+        2. Deploy to:<br>
+           &nbsp;&nbsp;- GitHub Pages (push to <code>gh-pages</code> branch)<br>
+           &nbsp;&nbsp;- Netlify/Vercel (drag-and-drop)<br>
+           &nbsp;&nbsp;- Any static web server</p>
+    </div>
+</body>
+</html>
